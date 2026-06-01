@@ -1,78 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:screen_protector/screen_protector.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+import 'app/app.dart';
+import 'features/auth/viewmodels/login_view_model.dart';
+import 'features/security/data/location_security_service.dart';
+import 'features/security/viewmodels/fake_gps_view_model.dart';
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: LoginScreen(),
-    );
-  }
-}
+  // Mantiene la protección de la práctica anterior.
+  await ScreenProtector.preventScreenshotOn();
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
-
-  @override
-  State<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  @override
-  void initState() {
-    super.initState();
-
-    // Bloquear capturas de pantalla
-    ScreenProtector.preventScreenshotOn();
-  }
-
-  @override
-  void dispose() {
-    // Restaurar comportamiento normal
-    ScreenProtector.preventScreenshotOff();
-
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Login Seguro")),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Usuario',
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            SizedBox(height: 20),
-
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Contraseña',
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            SizedBox(height: 20),
-
-            ElevatedButton(onPressed: null, child: Text("Iniciar Sesión")),
-          ],
+  runApp(
+    MultiProvider(
+      providers: [
+        Provider<LocationSecurityService>(
+          create: (_) => LocationSecurityService(),
         ),
-      ),
-    );
-  }
+        ChangeNotifierProvider<FakeGpsViewModel>(
+          create: (context) => FakeGpsViewModel(
+            context.read<LocationSecurityService>(),
+          ),
+        ),
+        ChangeNotifierProvider<LoginViewModel>(
+          create: (_) => LoginViewModel(),
+        ),
+      ],
+      child: const App(),
+    ),
+  );
 }

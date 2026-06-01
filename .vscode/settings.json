@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "/home/wilvera/login/linux"
+    "cmake.sourceDirectory": "/home/wilvera/login/linux",
+    "java.configuration.updateBuildConfiguration": "interactive"
 }
