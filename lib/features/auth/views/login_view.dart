@@ -28,17 +28,9 @@ class _LoginViewState extends State<LoginView> {
 
     final viewModel = context.read<LoginViewModel>();
 
-    final success = await viewModel.login(
+    await viewModel.login(
       username: _usernameController.text,
       password: _passwordController.text,
-    );
-
-    if (!mounted || !success) return;
-
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const HomeView(),
-      ),
     );
   }
 
@@ -46,6 +38,12 @@ class _LoginViewState extends State<LoginView> {
   Widget build(BuildContext context) {
     return Consumer<LoginViewModel>(
       builder: (context, viewModel, _) {
+        // Cuando sesión activa, muestra HomeView directamente
+        if (viewModel.isLoggedIn) {
+          return const HomeView();
+        }
+
+        // Si la sesión expiró (no es la primera vez), muestra aviso
         return Scaffold(
           appBar: AppBar(
             title: const Text('Login Seguro'),

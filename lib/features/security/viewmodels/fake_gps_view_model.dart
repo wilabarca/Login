@@ -26,6 +26,11 @@ class FakeGpsViewModel extends ChangeNotifier {
   bool get canContinue => _status == FakeGpsStatus.allowed;
   bool get isChecking => _status == FakeGpsStatus.checking;
 
+  // Llamado en web: salta la validación GPS y permite continuar
+  void skipValidation() {
+    _setState(FakeGpsStatus.allowed, 'Ubicación válida.');
+  }
+
   Future<void> validateDeviceLocation() async {
     _setState(
       FakeGpsStatus.checking,
@@ -44,10 +49,7 @@ class FakeGpsViewModel extends ChangeNotifier {
         return;
       }
 
-      _setState(
-        FakeGpsStatus.allowed,
-        'Ubicación válida.',
-      );
+      _setState(FakeGpsStatus.allowed, 'Ubicación válida.');
     } on LocationServiceDisabledException {
       _setState(
         FakeGpsStatus.locationDisabled,

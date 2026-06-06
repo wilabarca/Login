@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:device_preview/device_preview.dart';
 
 import '../features/security/views/security_gate_view.dart';
 
@@ -10,6 +11,12 @@ class App extends StatelessWidget {
     return MaterialApp(
       title: 'Login Seguro',
       debugShowCheckedModeBanner: false,
+
+      // Requerido por device_preview
+      useInheritedMediaQuery: true,
+      locale: DevicePreview.locale(context),
+      builder: DevicePreview.appBuilder,
+
       theme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: Colors.indigo,

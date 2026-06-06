@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -20,7 +21,12 @@ class _SecurityGateViewState extends State<SecurityGateView>
     WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<FakeGpsViewModel>().validateDeviceLocation();
+      // En web no hay GPS real, se salta la validación directamente
+      if (kIsWeb) {
+        context.read<FakeGpsViewModel>().skipValidation();
+      } else {
+        context.read<FakeGpsViewModel>().validateDeviceLocation();
+      }
     });
   }
 
@@ -32,7 +38,7 @@ class _SecurityGateViewState extends State<SecurityGateView>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed && !kIsWeb) {
       context.read<FakeGpsViewModel>().validateDeviceLocation();
     }
   }
