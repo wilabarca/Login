@@ -1,17 +1,30 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 class LoginViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   bool _isLoggedIn = false;
-  Timer? _inactivityTimer;
 
-  static const Duration _timeout = Duration(seconds: 30);
+  Timer? _warningTimer;
+  Timer? _countdownTimer;
+
+  bool _showInactivityWarning = false;
+  int _secondsRemaining = 10;
+
+  // Tiempo total sin uso antes de cerrar sesión.
+  static const Duration _inactivityTimeout = Duration(seconds: 30);
+
+  // Cuánto tiempo antes del cierre se mostrará el aviso.
+  static const Duration _warningBeforeLogout = Duration(seconds: 10);
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isLoggedIn => _isLoggedIn;
+
+  bool get showInactivityWarning => _showInactivityWarning;
+  int get secondsRemaining => _secondsRemaining;
 
   Future<bool> login({
     required String username,
@@ -31,6 +44,7 @@ class LoginViewModel extends ChangeNotifier {
     // Login local de prueba. No usa API.
     if (username.trim() == 'admin' && password.trim() == '1234') {
       _isLoggedIn = true;
+      _errorMessage = null;
       _startInactivityTimer();
       _setLoading(false);
       return true;
@@ -43,29 +57,77 @@ class LoginViewModel extends ChangeNotifier {
 
   void logout() {
     _isLoggedIn = false;
-    _stopInactivityTimer();
+    _errorMessage = null;
+    _showInactivityWarning = false;
+    _stopInactivityTimers();
     notifyListeners();
   }
 
   void resetInactivityTimer() {
-    if (_isLoggedIn) {
-      _startInactivityTimer();
-    }
+    if (!_isLoggedIn) return;
+
+    _showInactivityWarning = false;
+    _secondsRemaining = _warningBeforeLogout.inSeconds;
+
+    _startInactivityTimer();
+    notifyListeners();
   }
 
   void _startInactivityTimer() {
-    _inactivityTimer?.cancel();
-    _inactivityTimer = Timer(_timeout, _sessionExpired);
+    _stopInactivityTimers();
+
+    _showInactivityWarning = false;
+    _secondsRemaining = _warningBeforeLogout.inSeconds;
+
+    final warningDelay = Duration(
+      seconds: _inactivityTimeout.inSeconds - _warningBeforeLogout.inSeconds,
+    );
+
+    _warningTimer = Timer(warningDelay, _showWarningAndStartCountdown);
   }
 
-  void _stopInactivityTimer() {
-    _inactivityTimer?.cancel();
-    _inactivityTimer = null;
-  }
+  void _showWarningAndStartCountdown() {
+    if (!_isLoggedIn) return;
 
-  void _sessionExpired() {
-    _isLoggedIn = false;
+    _showInactivityWarning = true;
+    _secondsRemaining = _warningBeforeLogout.inSeconds;
     notifyListeners();
+
+    _countdownTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (timer) {
+        if (!_isLoggedIn) {
+          timer.cancel();
+          return;
+        }
+
+        _secondsRemaining--;
+
+        if (_secondsRemaining <= 0) {
+          timer.cancel();
+          _expireSession();
+          return;
+        }
+
+        notifyListeners();
+      },
+    );
+  }
+
+  void _expireSession() {
+    _isLoggedIn = false;
+    _showInactivityWarning = false;
+    _errorMessage = 'Tu sesión se cerró por inactividad.';
+    _stopInactivityTimers();
+    notifyListeners();
+  }
+
+  void _stopInactivityTimers() {
+    _warningTimer?.cancel();
+    _countdownTimer?.cancel();
+
+    _warningTimer = null;
+    _countdownTimer = null;
   }
 
   void _setLoading(bool value) {
@@ -75,7 +137,7 @@ class LoginViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _inactivityTimer?.cancel();
+    _stopInactivityTimers();
     super.dispose();
   }
 }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "894304909933",
+    "project_id": "explorachiapas-f3120",
+    "storage_bucket": "explorachiapas-f3120.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:894304909933:android:66de62b3a5b89e4349dd64",
+        "android_client_info": {
+          "package_name": "com.example.login"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSuWlIXdrWJRyXDmNOHkD3Kg86FXu9wi4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

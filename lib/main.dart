@@ -4,12 +4,21 @@ import 'package:provider/provider.dart';
 import 'package:screen_protector/screen_protector.dart';
 import 'package:device_preview/device_preview.dart';
 
+/*import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'firebase_options.dart';*/
+
 import 'app/app.dart';
 import 'features/auth/viewmodels/login_view_model.dart';
 import 'features/security/data/location_security_service.dart';
 import 'features/security/viewmodels/fake_gps_view_model.dart';
 
+
+
+
 Future<void> main() async {
+
   WidgetsFlutterBinding.ensureInitialized();
 
   // screen_protector solo funciona en móvil, no en web
