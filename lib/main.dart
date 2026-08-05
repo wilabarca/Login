@@ -29,14 +29,13 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  Future<void> initAuth() async {
+  if (FirebaseAuth.instance.currentUser == null) {
     try {
       await FirebaseAuth.instance.signInAnonymously();
     } catch (e) {
-      debugPrint("Error signInAnonymously: $e");
+      debugPrint("Error inicial en signInAnonymously: $e");
     }
   }
-  initAuth();
 
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
