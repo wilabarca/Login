@@ -93,7 +93,10 @@ class LoginViewModel extends ChangeNotifier {
     _currentUsername = user.username;
 
     await SecureStorageService.instance.seedSensitiveData(userId: user.id);
-    await DeviceRegistrationService.instance.registerDevice(userId: user.id);
+    
+    // El registro del token de Firebase puede tardar o fallar si no hay internet o
+    // configuración válida, por lo tanto no lo esperamos (await) para no colgar la UI local.
+    DeviceRegistrationService.instance.registerDevice(userId: user.id);
 
     _isLoggedIn = true;
     _errorMessage = null;

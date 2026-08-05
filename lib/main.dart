@@ -29,11 +29,14 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  try {
-    await FirebaseAuth.instance.signInAnonymously();
-  } catch (e) {
-    debugPrint("Error signInAnonymously: $e");
+  Future<void> initAuth() async {
+    try {
+      await FirebaseAuth.instance.signInAnonymously();
+    } catch (e) {
+      debugPrint("Error signInAnonymously: $e");
+    }
   }
+  initAuth();
 
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
