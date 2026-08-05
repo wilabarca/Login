@@ -50,3 +50,7 @@ app.*.map.json
 # Credenciales privadas de Firebase Admin
 *firebase-adminsdk*.json
 *service-account*.json
+**/node_modules/
+*firebase-adminsdk*.json
+*service-account*.json
+.env
