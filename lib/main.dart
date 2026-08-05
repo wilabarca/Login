@@ -5,7 +5,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:screen_protector/screen_protector.dart';
 
 import 'app/app.dart';
 import 'features/auth/viewmodels/login_view_model.dart';
@@ -37,10 +36,6 @@ Future<void> main() async {
   }
 
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
-  if (!kIsWeb) {
-    await ScreenProtector.preventScreenshotOn();
-  }
 
   runApp(
     DevicePreview(
