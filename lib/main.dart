@@ -16,9 +16,7 @@ import 'firebase_options.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   await RemoteWipeService.instance.handleRemoteMessage(message);
 }
@@ -26,9 +24,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   if (FirebaseAuth.instance.currentUser == null) {
     try {
@@ -51,9 +47,8 @@ Future<void> main() async {
             create: (_) => LocationSecurityService(),
           ),
           ChangeNotifierProvider<FakeGpsViewModel>(
-            create: (context) => FakeGpsViewModel(
-              context.read<LocationSecurityService>(),
-            ),
+            create: (context) =>
+                FakeGpsViewModel(context.read<LocationSecurityService>()),
           ),
           ChangeNotifierProvider<LoginViewModel>(
             create: (_) => LoginViewModel(),

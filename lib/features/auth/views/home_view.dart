@@ -47,7 +47,7 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
 
   void _onWipeResult(RemoteWipeResult result) {
     if (!mounted) return;
-    
+
     if (result == RemoteWipeResult.applied) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -63,7 +63,7 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
         ),
       );
     }
-    
+
     _loadData();
   }
 
@@ -73,8 +73,10 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     });
 
     final status = await SecureStorageService.instance.getSensitiveDataStatus();
-    final lastRemoteWipeAt = await SecureStorageService.instance.getLastRemoteWipeAt();
-    final lastCommandId = await SecureStorageService.instance.getLastProcessedCommandId();
+    final lastRemoteWipeAt = await SecureStorageService.instance
+        .getLastRemoteWipeAt();
+    final lastCommandId = await SecureStorageService.instance
+        .getLastProcessedCommandId();
     final token = await FirebaseMessaging.instance.getToken();
 
     if (!mounted) return;
@@ -89,10 +91,10 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   }
 
   Future<void> _recreateSensitiveFields(LoginViewModel viewModel) async {
-    final userId = viewModel.currentUserId;
-    if (userId == null) return;
+    final remoteUserId = viewModel.currentUsername;
+    if (remoteUserId == null) return;
 
-    await SecureStorageService.instance.seedSensitiveData(userId: userId);
+    await SecureStorageService.instance.seedSensitiveData(remoteUserId: remoteUserId);
     await _loadData();
   }
 
@@ -139,14 +141,35 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Usuario Remoto (FCM): ${viewModel.currentUsername ?? "Ninguno"}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              'Usuario Remoto (FCM): ${viewModel.currentUsername ?? "Ninguno"}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             const SizedBox(height: 8),
-                            Text('Token FCM obtenido: ${viewModel.fcmTokenAvailable ? "Sí" : "No"}'),
-                            Text('Registrado en Firestore: ${viewModel.firestoreRegistered ? "Sí" : "No"}'),
+                            Text(
+                              'Token FCM obtenido: ${viewModel.fcmTokenAvailable ? "Sí" : "No"}',
+                            ),
+                            Text(
+                              'Registrado en Firestore: ${viewModel.firestoreRegistered ? "Sí" : "No"}',
+                            ),
                             if (viewModel.registrationError != null)
-                              Text('Error de registro: ${viewModel.registrationError}', style: const TextStyle(color: Colors.red, fontSize: 12)),
-                            if (_fcmToken != null) 
-                              SelectableText('Token: ${_fcmToken!.substring(0, 15)}...', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                              Text(
+                                'Error de registro: ${viewModel.registrationError}',
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            if (_fcmToken != null)
+                              SelectableText(
+                                'Token: ${_fcmToken!.substring(0, 15)}...',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -162,9 +185,27 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Borrado remoto aplicado', style: TextStyle(color: Colors.red.shade900, fontWeight: FontWeight.bold)),
-                              Text('Fecha: $_lastRemoteWipeAt', style: TextStyle(color: Colors.red.shade800, fontSize: 12)),
-                              Text('Comando procesado: $_lastProcessedCommandId', style: TextStyle(color: Colors.red.shade800, fontSize: 12)),
+                              Text(
+                                'Borrado remoto aplicado',
+                                style: TextStyle(
+                                  color: Colors.red.shade900,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                'Fecha: $_lastRemoteWipeAt',
+                                style: TextStyle(
+                                  color: Colors.red.shade800,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                'Comando procesado: $_lastProcessedCommandId',
+                                style: TextStyle(
+                                  color: Colors.red.shade800,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -227,7 +268,9 @@ class _SensitiveDataCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  allDeleted ? Icons.check_circle_outline : Icons.security_outlined,
+                  allDeleted
+                      ? Icons.check_circle_outline
+                      : Icons.security_outlined,
                   color: allDeleted ? Colors.green : Colors.orange,
                 ),
                 const SizedBox(width: 8),
@@ -250,10 +293,14 @@ class _SensitiveDataCard extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: !isSaved ? Colors.green.shade50 : Colors.orange.shade50,
+                      color: !isSaved
+                          ? Colors.green.shade50
+                          : Colors.orange.shade50,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: !isSaved ? Colors.green.shade300 : Colors.orange.shade300,
+                        color: !isSaved
+                            ? Colors.green.shade300
+                            : Colors.orange.shade300,
                       ),
                     ),
                     child: Row(
@@ -266,7 +313,12 @@ class _SensitiveDataCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             '${entry.key}: ${isSaved ? "Guardado" : "Eliminado"}',
-                            style: TextStyle(fontWeight: FontWeight.bold, color: !isSaved ? Colors.green.shade800 : Colors.black87),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: !isSaved
+                                  ? Colors.green.shade800
+                                  : Colors.black87,
+                            ),
                           ),
                         ),
                       ],
@@ -319,13 +371,30 @@ class _InactivityWarningCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Advertencia de inactividad', style: TextStyle(fontWeight: FontWeight.bold)),
-            Text('Tu sesión se cerrará en $secondsRemaining segundos.', textAlign: TextAlign.center),
+            const Text(
+              'Advertencia de inactividad',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              'Tu sesión se cerrará en $secondsRemaining segundos.',
+              textAlign: TextAlign.center,
+            ),
             Row(
               children: [
-                Expanded(child: OutlinedButton(onPressed: () => context.read<LoginViewModel>().logout(), child: const Text('Cerrar sesión'))),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => context.read<LoginViewModel>().logout(),
+                    child: const Text('Cerrar sesión'),
+                  ),
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: FilledButton(onPressed: () => context.read<LoginViewModel>().resetInactivityTimer(), child: const Text('Seguir usando'))),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () =>
+                        context.read<LoginViewModel>().resetInactivityTimer(),
+                    child: const Text('Seguir usando'),
+                  ),
+                ),
               ],
             ),
           ],

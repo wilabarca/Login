@@ -32,14 +32,11 @@ class FakeGpsViewModel extends ChangeNotifier {
   }
 
   Future<void> validateDeviceLocation() async {
-    _setState(
-      FakeGpsStatus.checking,
-      'Validando seguridad de ubicación...',
-    );
+    _setState(FakeGpsStatus.checking, 'Validando seguridad de ubicación...');
 
     try {
-      final isFakeGpsEnabled =
-          await _locationSecurityService.isFakeGpsEnabled();
+      final isFakeGpsEnabled = await _locationSecurityService
+          .isFakeGpsEnabled();
 
       if (isFakeGpsEnabled) {
         _setState(

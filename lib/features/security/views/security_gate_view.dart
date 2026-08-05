@@ -49,9 +49,7 @@ class _SecurityGateViewState extends State<SecurityGateView>
       builder: (context, viewModel, _) {
         if (viewModel.isChecking) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 

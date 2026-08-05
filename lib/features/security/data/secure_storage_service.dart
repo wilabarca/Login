@@ -12,7 +12,7 @@ abstract class ISecureStorage {
 
 class FlutterSecureStorageWrapper implements ISecureStorage {
   final FlutterSecureStorage _storage;
-  
+
   FlutterSecureStorageWrapper(this._storage);
 
   @override
@@ -36,12 +36,10 @@ class SecureStorageService {
 
   static final SecureStorageService instance = SecureStorageService._internal(
     FlutterSecureStorageWrapper(
-      const FlutterSecureStorage(
-        aOptions: AndroidOptions(),
-      ),
+      const FlutterSecureStorage(aOptions: AndroidOptions()),
     ),
   );
-  
+
   @visibleForTesting
   static SecureStorageService createWithMock(ISecureStorage mockStorage) {
     return SecureStorageService._internal(mockStorage);
@@ -75,22 +73,22 @@ class SecureStorageService {
   Future<void> seedSensitiveData({required String remoteUserId}) async {
     await _storage.write(key: userIdKey, value: remoteUserId);
     await _storage.write(key: targetUserIdKey, value: remoteUserId);
-    
+
     await _storage.write(
       key: accessTokenKey,
       value: _generateCryptoRandomString(),
     );
-    
+
     await _storage.write(
       key: refreshTokenKey,
       value: _generateCryptoRandomString(),
     );
-    
+
     await _storage.write(
       key: sessionSecretKey,
       value: _generateCryptoRandomString(),
     );
-    
+
     final existingInstallId = await _storage.read(key: deviceInstallationIdKey);
     if (existingInstallId == null) {
       await _storage.write(
@@ -123,7 +121,7 @@ class SecureStorageService {
     for (final key in sensitiveKeys) {
       await _storage.delete(key: key);
     }
-    
+
     await _storage.write(
       key: lastRemoteWipeAtKey,
       value: DateTime.now().toIso8601String(),
@@ -145,7 +143,7 @@ class SecureStorageService {
   Future<void> saveProcessedCommandId(String commandId) async {
     await _storage.write(key: lastProcessedCommandIdKey, value: commandId);
   }
-  
+
   Future<String?> getLastRemoteWipeAt() async {
     return _storage.read(key: lastRemoteWipeAtKey);
   }

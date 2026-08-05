@@ -16,7 +16,7 @@ class LoginViewModel extends ChangeNotifier {
 
   String? _currentUserId;
   String? _currentUsername;
-  
+
   bool _fcmTokenAvailable = false;
   bool _firestoreRegistered = false;
   String? _registrationError;
@@ -35,7 +35,7 @@ class LoginViewModel extends ChangeNotifier {
 
   String? get currentUserId => _currentUserId;
   String? get currentUsername => _currentUsername;
-  
+
   bool get fcmTokenAvailable => _fcmTokenAvailable;
   bool get firestoreRegistered => _firestoreRegistered;
   String? get registrationError => _registrationError;
@@ -103,11 +103,15 @@ class LoginViewModel extends ChangeNotifier {
     _currentUsername = user.username;
 
     // Se usa user.username como remoteUserId
-    await SecureStorageService.instance.seedSensitiveData(remoteUserId: user.username);
-    
+    await SecureStorageService.instance.seedSensitiveData(
+      remoteUserId: user.username,
+    );
+
     // Registramos en Firestore y esperamos el resultado
-    final result = await DeviceRegistrationService.instance.registerDevice(remoteUserId: user.username);
-    
+    final result = await DeviceRegistrationService.instance.registerDevice(
+      remoteUserId: user.username,
+    );
+
     _fcmTokenAvailable = result.fcmTokenAvailable;
     _firestoreRegistered = result.firestoreRegistered;
     _registrationError = result.errorMessage;
@@ -151,28 +155,25 @@ class LoginViewModel extends ChangeNotifier {
 
     notifyListeners();
 
-    _inactivityTimer = Timer.periodic(
-      const Duration(seconds: 1),
-      (timer) {
-        if (!_isLoggedIn) {
-          _stopInactivityTimer();
-          return;
-        }
+    _inactivityTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!_isLoggedIn) {
+        _stopInactivityTimer();
+        return;
+      }
 
-        _secondsRemaining--;
+      _secondsRemaining--;
 
-        if (_secondsRemaining <= _warningThresholdSeconds) {
-          _showInactivityWarning = true;
-        }
+      if (_secondsRemaining <= _warningThresholdSeconds) {
+        _showInactivityWarning = true;
+      }
 
-        if (_secondsRemaining <= 0) {
-          _sessionExpired();
-          return;
-        }
+      if (_secondsRemaining <= 0) {
+        _sessionExpired();
+        return;
+      }
 
-        notifyListeners();
-      },
-    );
+      notifyListeners();
+    });
   }
 
   void _stopInactivityTimer() {

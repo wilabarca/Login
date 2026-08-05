@@ -15,10 +15,7 @@ class App extends StatelessWidget {
       locale: DevicePreview.locale(context),
       builder: DevicePreview.appBuilder,
 
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.indigo,
-      ),
+      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
       home: const SecurityGateView(),
     );
   }

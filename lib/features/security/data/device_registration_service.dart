@@ -26,7 +26,9 @@ class DeviceRegistrationService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<DeviceRegistrationResult> registerDevice({required String remoteUserId}) async {
+  Future<DeviceRegistrationResult> registerDevice({
+    required String remoteUserId,
+  }) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
@@ -41,7 +43,9 @@ class DeviceRegistrationService {
       String? token;
       try {
         // Obtenemos el token con timeout para no bloquear
-        token = await FirebaseMessaging.instance.getToken().timeout(const Duration(seconds: 10));
+        token = await FirebaseMessaging.instance.getToken().timeout(
+          const Duration(seconds: 10),
+        );
       } catch (e) {
         debugPrint('[DEVICE_REGISTRATION] Error obteniendo FCM Token: $e');
         return DeviceRegistrationResult(
@@ -61,7 +65,8 @@ class DeviceRegistrationService {
         );
       }
 
-      final installationId = await SecureStorageService.instance.getDeviceInstallationId();
+      final installationId = await SecureStorageService.instance
+          .getDeviceInstallationId();
       if (installationId == null) {
         return DeviceRegistrationResult(
           success: false,
@@ -70,25 +75,31 @@ class DeviceRegistrationService {
           errorMessage: 'installationId local no encontrado.',
         );
       }
-      
-      final String platform = kIsWeb ? 'web' : (Platform.isAndroid ? 'android' : (Platform.isIOS ? 'ios' : 'unknown'));
-      
+
+      final String platform = kIsWeb
+          ? 'web'
+          : (Platform.isAndroid
+                ? 'android'
+                : (Platform.isIOS ? 'ios' : 'unknown'));
+
       final docRef = _firestore
           .collection('users')
           .doc(remoteUserId)
           .collection('devices')
           .doc(installationId);
-          
+
       try {
-        await docRef.set({
-          'fcmToken': token,
-          'installationId': installationId,
-          'remoteUserId': remoteUserId,
-          'ownerUid': user.uid,
-          'platform': platform,
-          'updatedAt': FieldValue.serverTimestamp(),
-          'enabled': true,
-        }, SetOptions(merge: true)).timeout(const Duration(seconds: 10));
+        await docRef
+            .set({
+              'fcmToken': token,
+              'installationId': installationId,
+              'remoteUserId': remoteUserId,
+              'ownerUid': user.uid,
+              'platform': platform,
+              'updatedAt': FieldValue.serverTimestamp(),
+              'enabled': true,
+            }, SetOptions(merge: true))
+            .timeout(const Duration(seconds: 10));
       } catch (e) {
         debugPrint('[DEVICE_REGISTRATION] Error guardando en Firestore: $e');
         return DeviceRegistrationResult(
@@ -98,12 +109,20 @@ class DeviceRegistrationService {
           errorMessage: 'Error guardando en Firestore: $e',
         );
       }
-      
-      debugPrint('[DEVICE_REGISTRATION] Dispositivo $installationId registrado en Firestore para $remoteUserId');
+
+      debugPrint(
+        '[DEVICE_REGISTRATION] Dispositivo $installationId registrado en Firestore para $remoteUserId',
+      );
 
       // Si todo fue bien, escuchamos por token refreshes para actualizarlo luego
       FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
-        _updateTokenInFirestore(remoteUserId: remoteUserId, token: newToken, installationId: installationId, ownerUid: user.uid, platform: platform);
+        _updateTokenInFirestore(
+          remoteUserId: remoteUserId,
+          token: newToken,
+          installationId: installationId,
+          ownerUid: user.uid,
+          platform: platform,
+        );
       });
 
       return DeviceRegistrationResult(
@@ -111,7 +130,6 @@ class DeviceRegistrationService {
         fcmTokenAvailable: true,
         firestoreRegistered: true,
       );
-      
     } catch (e) {
       debugPrint('[DEVICE_REGISTRATION] Error general en registerDevice: $e');
       return DeviceRegistrationResult(
@@ -136,15 +154,19 @@ class DeviceRegistrationService {
           .doc(remoteUserId)
           .collection('devices')
           .doc(installationId);
-          
+
       await docRef.set({
         'fcmToken': token,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-      
-      debugPrint('[DEVICE_REGISTRATION] Token FCM actualizado en Firestore para $remoteUserId');
+
+      debugPrint(
+        '[DEVICE_REGISTRATION] Token FCM actualizado en Firestore para $remoteUserId',
+      );
     } catch (e) {
-      debugPrint('[DEVICE_REGISTRATION] Error actualizando token en Firestore: $e');
+      debugPrint(
+        '[DEVICE_REGISTRATION] Error actualizando token en Firestore: $e',
+      );
     }
   }
 }

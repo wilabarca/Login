@@ -25,19 +25,25 @@ class FcmService {
       sound: true,
     );
 
-    debugPrint('[FCM] Estado del permiso de notificaciones: ${settings.authorizationStatus}');
+    debugPrint(
+      '[FCM] Estado del permiso de notificaciones: ${settings.authorizationStatus}',
+    );
 
     // 2. Escuchar mensajes en foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       debugPrint('[FCM] Mensaje recibido en foreground');
-      final result = await RemoteWipeService.instance.handleRemoteMessage(message);
+      final result = await RemoteWipeService.instance.handleRemoteMessage(
+        message,
+      );
       _wipeResultController.add(result);
     });
 
     // 3. Escuchar cuando la app se abre desde una notificación (background -> foreground)
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
       debugPrint('[FCM] Mensaje abierto desde background');
-      final result = await RemoteWipeService.instance.handleRemoteMessage(message);
+      final result = await RemoteWipeService.instance.handleRemoteMessage(
+        message,
+      );
       _wipeResultController.add(result);
     });
 
@@ -45,7 +51,9 @@ class FcmService {
     final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
     if (initialMessage != null) {
       debugPrint('[FCM] Procesando mensaje inicial (app terminada)');
-      final result = await RemoteWipeService.instance.handleRemoteMessage(initialMessage);
+      final result = await RemoteWipeService.instance.handleRemoteMessage(
+        initialMessage,
+      );
       _wipeResultController.add(result);
     }
   }

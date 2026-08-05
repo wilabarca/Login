@@ -31,7 +31,7 @@ void main() {
     });
 
     test('Escritura de los cuatro campos', () async {
-      await service.seedSensitiveData(userId: 'admin');
+      await service.seedSensitiveData(remoteUserId: 'admin');
 
       final status = await service.getSensitiveDataStatus();
 
@@ -44,20 +44,23 @@ void main() {
       expect(hasData, isTrue);
     });
 
-    test('Detección de que los cuatro campos existen y luego eliminación', () async {
-      await service.seedSensitiveData(userId: 'admin');
-      
-      expect(await service.hasSensitiveData(), isTrue);
+    test(
+      'Detección de que los cuatro campos existen y luego eliminación',
+      () async {
+        await service.seedSensitiveData(remoteUserId: 'admin');
 
-      await service.deleteSensitiveData();
+        expect(await service.hasSensitiveData(), isTrue);
 
-      expect(await service.hasSensitiveData(), isFalse);
+        await service.deleteSensitiveData();
 
-      final status = await service.getSensitiveDataStatus();
-      expect(status['user_id'], isFalse);
-      expect(status['access_token'], isFalse);
-      expect(status['refresh_token'], isFalse);
-      expect(status['session_secret'], isFalse);
-    });
+        expect(await service.hasSensitiveData(), isFalse);
+
+        final status = await service.getSensitiveDataStatus();
+        expect(status['user_id'], isFalse);
+        expect(status['access_token'], isFalse);
+        expect(status['refresh_token'], isFalse);
+        expect(status['session_secret'], isFalse);
+      },
+    );
   });
 }

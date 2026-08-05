@@ -28,9 +28,7 @@ class BlockedView extends StatelessWidget {
         status == FakeGpsStatus.blocked;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Acceso bloqueado'),
-      ),
+      appBar: AppBar(title: const Text('Acceso bloqueado')),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Center(
@@ -39,18 +37,14 @@ class BlockedView extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.gps_off,
-                  size: 80,
-                  color: Colors.red,
-                ),
+                const Icon(Icons.gps_off, size: 80, color: Colors.red),
                 const SizedBox(height: 24),
                 Text(
                   'No se puede ejecutar la aplicación',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(

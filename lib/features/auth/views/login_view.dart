@@ -81,9 +81,7 @@ class _LoginViewState extends State<LoginView> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: 420,
-                  ),
+                  constraints: const BoxConstraints(maxWidth: 420),
                   child: Card(
                     elevation: 6,
                     shape: RoundedRectangleBorder(
@@ -203,9 +201,7 @@ class _LoginViewState extends State<LoginView> {
                                 child: Text(
                                   viewModel.errorMessage!,
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Colors.red.shade800,
-                                  ),
+                                  style: TextStyle(color: Colors.red.shade800),
                                 ),
                               ),
                             ],
@@ -236,8 +232,9 @@ class _LoginViewState extends State<LoginView> {
                             const SizedBox(height: 12),
 
                             TextButton(
-                              onPressed:
-                                  viewModel.isLoading ? null : _toggleMode,
+                              onPressed: viewModel.isLoading
+                                  ? null
+                                  : _toggleMode,
                               child: Text(
                                 _isRegisterMode
                                     ? 'Ya tengo cuenta'

@@ -5,10 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LocalAuthUser {
-  const LocalAuthUser({
-    required this.id,
-    required this.username,
-  });
+  const LocalAuthUser({required this.id, required this.username});
 
   final String id;
   final String username;
@@ -27,9 +24,7 @@ class LocalAuthStorage {
   Future<void> ensureDemoUser() async {
     final users = await _readUsers();
 
-    final exists = users.any(
-      (user) => user['username'] == 'admin',
-    );
+    final exists = users.any((user) => user['username'] == 'admin');
 
     if (exists) return;
 
@@ -38,10 +33,7 @@ class LocalAuthStorage {
     users.add({
       'id': userId,
       'username': 'admin',
-      'password_hash': _hashPassword(
-        userId: userId,
-        password: '1234',
-      ),
+      'password_hash': _hashPassword(userId: userId, password: '1234'),
       'created_at': DateTime.now().toIso8601String(),
     });
 
@@ -65,9 +57,7 @@ class LocalAuthStorage {
 
     final users = await _readUsers();
 
-    final exists = users.any(
-      (user) => user['username'] == normalizedUsername,
-    );
+    final exists = users.any((user) => user['username'] == normalizedUsername);
 
     if (exists) {
       throw Exception('Ese usuario ya existe.');
@@ -87,15 +77,9 @@ class LocalAuthStorage {
 
     await _saveUsers(users);
 
-    await _storage.write(
-      key: _currentUserIdKey,
-      value: userId,
-    );
+    await _storage.write(key: _currentUserIdKey, value: userId);
 
-    return LocalAuthUser(
-      id: userId,
-      username: normalizedUsername,
-    );
+    return LocalAuthUser(id: userId, username: normalizedUsername);
   }
 
   Future<LocalAuthUser?> login({
@@ -121,15 +105,9 @@ class LocalAuthStorage {
 
       if (storedUsername == normalizedUsername &&
           storedPasswordHash == incomingPasswordHash) {
-        await _storage.write(
-          key: _currentUserIdKey,
-          value: userId,
-        );
+        await _storage.write(key: _currentUserIdKey, value: userId);
 
-        return LocalAuthUser(
-          id: userId,
-          username: storedUsername,
-        );
+        return LocalAuthUser(id: userId, username: storedUsername);
       }
     }
 
@@ -159,10 +137,7 @@ class LocalAuthStorage {
   }
 
   Future<void> _saveUsers(List<Map<String, dynamic>> users) async {
-    await _storage.write(
-      key: _usersKey,
-      value: jsonEncode(users),
-    );
+    await _storage.write(key: _usersKey, value: jsonEncode(users));
   }
 
   String _createLocalUserId() {

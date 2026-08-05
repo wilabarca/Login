@@ -1,7 +1,9 @@
 import 'dart:async';
 
 class InactivityService {
-  static const Duration _timeout = Duration(seconds: 20); // aqui se pone el tiempo de salida del login
+  static const Duration _timeout = Duration(
+    seconds: 20,
+  ); // aqui se pone el tiempo de salida del login
   Timer? _timer;
   final void Function() onTimeout;
 
