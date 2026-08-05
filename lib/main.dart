@@ -1,34 +1,50 @@
+import 'package:device_preview/device_preview.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:screen_protector/screen_protector.dart';
-import 'package:device_preview/device_preview.dart';
-
-/*import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'firebase_options.dart';*/
 
 import 'app/app.dart';
 import 'features/auth/viewmodels/login_view_model.dart';
 import 'features/security/data/location_security_service.dart';
+import 'features/security/data/remote_wipe_service.dart';
 import 'features/security/viewmodels/fake_gps_view_model.dart';
+import 'firebase_options.dart';
 
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
-
+  await RemoteWipeService.instance.handleRemoteMessage(message);
+}
 
 Future<void> main() async {
-
   WidgetsFlutterBinding.ensureInitialized();
 
-  // screen_protector solo funciona en móvil, no en web
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  try {
+    await FirebaseAuth.instance.signInAnonymously();
+  } catch (e) {
+    debugPrint("Error signInAnonymously: $e");
+  }
+
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
   if (!kIsWeb) {
     await ScreenProtector.preventScreenshotOn();
   }
 
   runApp(
     DevicePreview(
-      enabled: true,
+      enabled: kIsWeb,
       builder: (context) => MultiProvider(
         providers: [
           Provider<LocationSecurityService>(

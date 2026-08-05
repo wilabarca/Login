@@ -12,8 +12,6 @@ class App extends StatelessWidget {
       title: 'Login Seguro',
       debugShowCheckedModeBanner: false,
 
-      // Requerido por device_preview
-      useInheritedMediaQuery: true,
       locale: DevicePreview.locale(context),
       builder: DevicePreview.appBuilder,
 

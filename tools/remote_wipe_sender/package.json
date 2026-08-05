@@ -1,0 +1,13 @@
+{
+  "name": "remote-wipe-sender",
+  "version": "1.0.0",
+  "description": "Emisor de borrado remoto FCM para el proyecto Login",
+  "main": "send_remote_wipe.mjs",
+  "type": "module",
+  "scripts": {
+    "start": "node send_remote_wipe.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

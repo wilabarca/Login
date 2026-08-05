@@ -2,22 +2,25 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../security/data/secure_storage_service.dart';
+import '../../security/data/device_registration_service.dart';
+import '../../security/data/local_auth_storage.dart';
+
 class LoginViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   bool _isLoggedIn = false;
 
-  Timer? _warningTimer;
-  Timer? _countdownTimer;
-
   bool _showInactivityWarning = false;
-  int _secondsRemaining = 10;
+  int _secondsRemaining = _timeout.inSeconds;
 
-  // Tiempo total sin uso antes de cerrar sesión.
-  static const Duration _inactivityTimeout = Duration(seconds: 30);
+  String? _currentUserId;
+  String? _currentUsername;
 
-  // Cuánto tiempo antes del cierre se mostrará el aviso.
-  static const Duration _warningBeforeLogout = Duration(seconds: 10);
+  Timer? _inactivityTimer;
+
+  static const Duration _timeout = Duration(seconds: 30);
+  static const int _warningThresholdSeconds = 10;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -26,6 +29,9 @@ class LoginViewModel extends ChangeNotifier {
   bool get showInactivityWarning => _showInactivityWarning;
   int get secondsRemaining => _secondsRemaining;
 
+  String? get currentUserId => _currentUserId;
+  String? get currentUsername => _currentUsername;
+
   Future<bool> login({
     required String username,
     required String password,
@@ -33,7 +39,7 @@ class LoginViewModel extends ChangeNotifier {
     _setLoading(true);
     _errorMessage = null;
 
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 400));
 
     if (username.trim().isEmpty || password.trim().isEmpty) {
       _errorMessage = 'Ingresa usuario y contraseña.';
@@ -41,71 +47,106 @@ class LoginViewModel extends ChangeNotifier {
       return false;
     }
 
-    // Login local de prueba. No usa API.
-    if (username.trim() == 'admin' && password.trim() == '1234') {
-      _isLoggedIn = true;
-      _errorMessage = null;
-      _startInactivityTimer();
+    final user = await LocalAuthStorage.instance.login(
+      username: username,
+      password: password,
+    );
+
+    if (user == null) {
+      _errorMessage = 'Credenciales incorrectas.';
       _setLoading(false);
-      return true;
+      return false;
     }
 
-    _errorMessage = 'Credenciales incorrectas. Usa admin / 1234.';
-    _setLoading(false);
-    return false;
+    await _completeLogin(user);
+
+    return true;
   }
 
-  void logout() {
-    _isLoggedIn = false;
+  Future<bool> register({
+    required String username,
+    required String password,
+  }) async {
+    _setLoading(true);
     _errorMessage = null;
+
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    try {
+      final user = await LocalAuthStorage.instance.register(
+        username: username,
+        password: password,
+      );
+
+      await _completeLogin(user);
+
+      return true;
+    } catch (error) {
+      _errorMessage = error.toString().replaceFirst('Exception: ', '');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<void> _completeLogin(LocalAuthUser user) async {
+    _currentUserId = user.id;
+    _currentUsername = user.username;
+
+    await SecureStorageService.instance.seedSensitiveData(userId: user.id);
+    await DeviceRegistrationService.instance.registerDevice(userId: user.id);
+
+    _isLoggedIn = true;
+    _errorMessage = null;
+
+    _startInactivityTimer();
+
+    _setLoading(false);
+  }
+
+  Future<void> logout() async {
+    _isLoggedIn = false;
     _showInactivityWarning = false;
-    _stopInactivityTimers();
+    _secondsRemaining = _timeout.inSeconds;
+    _currentUserId = null;
+    _currentUsername = null;
+
+    await LocalAuthStorage.instance.logout();
+
+    _stopInactivityTimer();
+
     notifyListeners();
   }
 
   void resetInactivityTimer() {
     if (!_isLoggedIn) return;
 
-    _showInactivityWarning = false;
-    _secondsRemaining = _warningBeforeLogout.inSeconds;
-
     _startInactivityTimer();
-    notifyListeners();
   }
 
   void _startInactivityTimer() {
-    _stopInactivityTimers();
+    _stopInactivityTimer();
 
+    _secondsRemaining = _timeout.inSeconds;
     _showInactivityWarning = false;
-    _secondsRemaining = _warningBeforeLogout.inSeconds;
 
-    final warningDelay = Duration(
-      seconds: _inactivityTimeout.inSeconds - _warningBeforeLogout.inSeconds,
-    );
-
-    _warningTimer = Timer(warningDelay, _showWarningAndStartCountdown);
-  }
-
-  void _showWarningAndStartCountdown() {
-    if (!_isLoggedIn) return;
-
-    _showInactivityWarning = true;
-    _secondsRemaining = _warningBeforeLogout.inSeconds;
     notifyListeners();
 
-    _countdownTimer = Timer.periodic(
+    _inactivityTimer = Timer.periodic(
       const Duration(seconds: 1),
       (timer) {
         if (!_isLoggedIn) {
-          timer.cancel();
+          _stopInactivityTimer();
           return;
         }
 
         _secondsRemaining--;
 
+        if (_secondsRemaining <= _warningThresholdSeconds) {
+          _showInactivityWarning = true;
+        }
+
         if (_secondsRemaining <= 0) {
-          timer.cancel();
-          _expireSession();
+          _sessionExpired();
           return;
         }
 
@@ -114,20 +155,21 @@ class LoginViewModel extends ChangeNotifier {
     );
   }
 
-  void _expireSession() {
-    _isLoggedIn = false;
-    _showInactivityWarning = false;
-    _errorMessage = 'Tu sesión se cerró por inactividad.';
-    _stopInactivityTimers();
-    notifyListeners();
+  void _stopInactivityTimer() {
+    _inactivityTimer?.cancel();
+    _inactivityTimer = null;
   }
 
-  void _stopInactivityTimers() {
-    _warningTimer?.cancel();
-    _countdownTimer?.cancel();
+  void _sessionExpired() {
+    _isLoggedIn = false;
+    _showInactivityWarning = false;
+    _secondsRemaining = _timeout.inSeconds;
+    _currentUserId = null;
+    _currentUsername = null;
 
-    _warningTimer = null;
-    _countdownTimer = null;
+    _stopInactivityTimer();
+
+    notifyListeners();
   }
 
   void _setLoading(bool value) {
@@ -137,7 +179,7 @@ class LoginViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _stopInactivityTimers();
+    _stopInactivityTimer();
     super.dispose();
   }
 }
