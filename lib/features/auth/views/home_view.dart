@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../security/data/secure_storage_service.dart';
 import '../viewmodels/login_view_model.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import '../../notifications/data/fcm_service.dart';
+import '../../security/data/remote_wipe_service.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -12,16 +15,55 @@ class HomeView extends StatefulWidget {
   State<HomeView> createState() => _HomeViewState();
 }
 
-class _HomeViewState extends State<HomeView> {
+class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   Map<String, bool> _sensitiveFieldsStatus = {};
   bool _isLoadingSensitiveFields = true;
   String? _lastRemoteWipeAt;
   String? _lastProcessedCommandId;
   String? _fcmToken;
+  StreamSubscription<RemoteWipeResult>? _fcmSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _fcmSubscription = FcmService.instance.onWipeResult.listen(_onWipeResult);
+    _loadData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _fcmSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadData();
+    }
+  }
+
+  void _onWipeResult(RemoteWipeResult result) {
+    if (!mounted) return;
+    
+    if (result == RemoteWipeResult.applied) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Datos sensibles eliminados por orden remota (FCM).'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Orden remota ignorada/fallida: ${result.name}'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+    
     _loadData();
   }
 
@@ -97,9 +139,12 @@ class _HomeViewState extends State<HomeView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Usuario Actual: ${viewModel.currentUserId ?? "Ninguno"}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text('Usuario Remoto (FCM): ${viewModel.currentUsername ?? "Ninguno"}', style: const TextStyle(fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
-                            Text('FCM Token Registrado: ${_fcmToken != null ? "Sí" : "No"}'),
+                            Text('Token FCM obtenido: ${viewModel.fcmTokenAvailable ? "Sí" : "No"}'),
+                            Text('Registrado en Firestore: ${viewModel.firestoreRegistered ? "Sí" : "No"}'),
+                            if (viewModel.registrationError != null)
+                              Text('Error de registro: ${viewModel.registrationError}', style: const TextStyle(color: Colors.red, fontSize: 12)),
                             if (_fcmToken != null) 
                               SelectableText('Token: ${_fcmToken!.substring(0, 15)}...', style: const TextStyle(fontSize: 12, color: Colors.grey)),
                           ],
