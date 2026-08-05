@@ -72,9 +72,9 @@ class SecureStorageService {
     return base64UrlEncode(values);
   }
 
-  Future<void> seedSensitiveData({required String userId}) async {
-    await _storage.write(key: userIdKey, value: userId);
-    await _storage.write(key: targetUserIdKey, value: userId);
+  Future<void> seedSensitiveData({required String remoteUserId}) async {
+    await _storage.write(key: userIdKey, value: remoteUserId);
+    await _storage.write(key: targetUserIdKey, value: remoteUserId);
     
     await _storage.write(
       key: accessTokenKey,

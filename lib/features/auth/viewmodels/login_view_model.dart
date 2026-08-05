@@ -16,6 +16,10 @@ class LoginViewModel extends ChangeNotifier {
 
   String? _currentUserId;
   String? _currentUsername;
+  
+  bool _fcmTokenAvailable = false;
+  bool _firestoreRegistered = false;
+  String? _registrationError;
 
   Timer? _inactivityTimer;
 
@@ -31,6 +35,10 @@ class LoginViewModel extends ChangeNotifier {
 
   String? get currentUserId => _currentUserId;
   String? get currentUsername => _currentUsername;
+  
+  bool get fcmTokenAvailable => _fcmTokenAvailable;
+  bool get firestoreRegistered => _firestoreRegistered;
+  String? get registrationError => _registrationError;
 
   Future<bool> login({
     required String username,
@@ -38,6 +46,7 @@ class LoginViewModel extends ChangeNotifier {
   }) async {
     _setLoading(true);
     _errorMessage = null;
+    _registrationError = null;
 
     await Future.delayed(const Duration(milliseconds: 400));
 
@@ -69,6 +78,7 @@ class LoginViewModel extends ChangeNotifier {
   }) async {
     _setLoading(true);
     _errorMessage = null;
+    _registrationError = null;
 
     await Future.delayed(const Duration(milliseconds: 400));
 
@@ -92,11 +102,15 @@ class LoginViewModel extends ChangeNotifier {
     _currentUserId = user.id;
     _currentUsername = user.username;
 
-    await SecureStorageService.instance.seedSensitiveData(userId: user.id);
+    // Se usa user.username como remoteUserId
+    await SecureStorageService.instance.seedSensitiveData(remoteUserId: user.username);
     
-    // El registro del token de Firebase puede tardar o fallar si no hay internet o
-    // configuración válida, por lo tanto no lo esperamos (await) para no colgar la UI local.
-    DeviceRegistrationService.instance.registerDevice(userId: user.id);
+    // Registramos en Firestore y esperamos el resultado
+    final result = await DeviceRegistrationService.instance.registerDevice(remoteUserId: user.username);
+    
+    _fcmTokenAvailable = result.fcmTokenAvailable;
+    _firestoreRegistered = result.firestoreRegistered;
+    _registrationError = result.errorMessage;
 
     _isLoggedIn = true;
     _errorMessage = null;
@@ -112,6 +126,9 @@ class LoginViewModel extends ChangeNotifier {
     _secondsRemaining = _timeout.inSeconds;
     _currentUserId = null;
     _currentUsername = null;
+    _fcmTokenAvailable = false;
+    _firestoreRegistered = false;
+    _registrationError = null;
 
     await LocalAuthStorage.instance.logout();
 
