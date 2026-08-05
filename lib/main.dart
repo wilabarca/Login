@@ -11,6 +11,7 @@ import 'features/auth/viewmodels/login_view_model.dart';
 import 'features/security/data/location_security_service.dart';
 import 'features/security/data/remote_wipe_service.dart';
 import 'features/security/viewmodels/fake_gps_view_model.dart';
+import 'features/notifications/data/fcm_service.dart';
 import 'firebase_options.dart';
 
 @pragma('vm:entry-point')
@@ -38,6 +39,8 @@ Future<void> main() async {
   }
 
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  await FcmService.instance.init();
 
   runApp(
     DevicePreview(

@@ -4,57 +4,89 @@ import 'package:flutter/foundation.dart';
 import '../../remote_wipe/data/remote_wipe_message_parser.dart';
 import 'secure_storage_service.dart';
 
-class RemoteWipeService {
-  RemoteWipeService._();
+enum RemoteWipeResult {
+  applied,
+  invalidPayload,
+  invalidAction,
+  expired,
+  wrongUser,
+  duplicate,
+  noLocalUser,
+  storageError,
+}
 
-  static final RemoteWipeService instance = RemoteWipeService._();
+class RemoteWipeService {
+  RemoteWipeService._internal(this._storageService);
+
+  static final RemoteWipeService instance = RemoteWipeService._internal(
+    SecureStorageService.instance,
+  );
+
+  @visibleForTesting
+  static RemoteWipeService createWithStorage(SecureStorageService storageService) {
+    return RemoteWipeService._internal(storageService);
+  }
+
+  final SecureStorageService _storageService;
 
   static const String remoteWipeAction = 'remote_wipe';
 
-  Future<void> handleRemoteMessage(RemoteMessage message) async {
+  Future<RemoteWipeResult> handleRemoteMessage(RemoteMessage message) async {
+    debugPrint('[REMOTE_WIPE] Evaluando orden FCM recibida...');
+    
     final command = RemoteWipeMessageParser.parse(message.data);
 
     if (command == null) {
-      return; // El parser ya hizo el debugPrint
+      debugPrint('[REMOTE_WIPE] Orden rechazada: invalidPayload');
+      return RemoteWipeResult.invalidPayload;
     }
 
     if (command.action != remoteWipeAction) {
-      debugPrint('FCM ignorado: action no es remote_wipe.');
-      return;
+      debugPrint('[REMOTE_WIPE] Orden rechazada: invalidAction (${command.action})');
+      return RemoteWipeResult.invalidAction;
     }
 
     if (command.isExpired) {
-      debugPrint('FCM ignorado: la orden ha expirado.');
-      return;
+      debugPrint('[REMOTE_WIPE] Orden rechazada: expired');
+      return RemoteWipeResult.expired;
     }
 
-    final localUserId = await SecureStorageService.instance.getTargetUserId();
+    final localUserId = await _storageService.getTargetUserId();
 
     if (localUserId == null || localUserId.isEmpty) {
-      debugPrint('FCM ignorado: no existe usuario registrado localmente.');
-      return;
+      debugPrint('[REMOTE_WIPE] Orden rechazada: noLocalUser');
+      return RemoteWipeResult.noLocalUser;
     }
 
     if (command.targetUserId != localUserId) {
-      debugPrint('FCM ignorado: la orden va dirigida a otro usuario (${command.targetUserId} != $localUserId).');
-      return;
+      debugPrint('[REMOTE_WIPE] Orden rechazada: wrongUser (${command.targetUserId} != $localUserId)');
+      return RemoteWipeResult.wrongUser;
     }
 
-    final lastCommandId = await SecureStorageService.instance.getLastProcessedCommandId();
+    final lastCommandId = await _storageService.getLastProcessedCommandId();
 
     if (lastCommandId == command.commandId) {
-      debugPrint('FCM ignorado: la orden ya fue procesada anteriormente.');
-      return;
+      debugPrint('[REMOTE_WIPE] Orden rechazada: duplicate (${command.commandId})');
+      return RemoteWipeResult.duplicate;
     }
 
-    // Si pasamos todas las validaciones, ejecutamos el borrado
-    await SecureStorageService.instance.deleteSensitiveData();
-    await SecureStorageService.instance.saveProcessedCommandId(command.commandId);
+    debugPrint('[REMOTE_WIPE] Usuario validado: $localUserId');
 
-    debugPrint('================ FCM DEBUG ================');
-    debugPrint('Datos sensibles eliminados remotamente por FCM.');
-    debugPrint('Command ID: ${command.commandId}');
-    debugPrint('Target User ID: ${command.targetUserId}');
-    debugPrint('===========================================');
+    // Ejecutamos el borrado
+    await _storageService.deleteSensitiveData();
+    await _storageService.saveProcessedCommandId(command.commandId);
+
+    // Verificación
+    final status = await _storageService.getSensitiveDataStatus();
+    final hasAny = status.values.any((isSaved) => isSaved == true);
+
+    if (hasAny) {
+      debugPrint('[REMOTE_WIPE] Error: storageError (No se pudieron eliminar todos los campos)');
+      return RemoteWipeResult.storageError;
+    }
+
+    debugPrint('[REMOTE_WIPE] Borrado aplicado');
+    debugPrint('[REMOTE_WIPE] Command ID: ${command.commandId}');
+    return RemoteWipeResult.applied;
   }
 }
