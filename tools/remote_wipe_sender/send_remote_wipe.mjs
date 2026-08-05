@@ -3,12 +3,55 @@ import crypto from 'crypto';
 
 const args = process.argv.slice(2);
 
-const userIdIndex = args.findIndex((a) => a === '--user-id');
-if (userIdIndex === -1 || userIdIndex + 1 >= args.length) {
-    console.error('Error: Debes proporcionar --user-id. Ejemplo: node send_remote_wipe.mjs --user-id admin');
+function showHelp() {
+    console.log(`
+Uso: node send_remote_wipe.mjs [opciones]
+
+Opciones:
+  --user-id <string>             Usuario cuyos dispositivos serán consultados en Firestore (Requerido).
+  --target-user-id <string>      Valor que será colocado en el payload targetUserId (Por defecto: igual a --user-id).
+  --command-id <string>          Identificador único del comando (Por defecto: UUID aleatorio).
+  --expires-in-seconds <number>  Tiempo de expiración en segundos (Por defecto: 300 = 5 minutos).
+  --help                         Muestra esta ayuda.
+
+Ejemplo:
+  node send_remote_wipe.mjs --user-id admin
+  node send_remote_wipe.mjs --user-id admin --target-user-id otro_usuario
+    `);
+    process.exit(0);
+}
+
+if (args.includes('--help')) {
+    showHelp();
+}
+
+let userId = null;
+let targetUserId = null;
+let commandId = crypto.randomUUID();
+let expiresInSeconds = 300;
+
+for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--user-id') {
+        userId = args[++i];
+    } else if (arg === '--target-user-id') {
+        targetUserId = args[++i];
+    } else if (arg === '--command-id') {
+        commandId = args[++i];
+    } else if (arg === '--expires-in-seconds') {
+        expiresInSeconds = parseInt(args[++i], 10);
+    }
+}
+
+if (!userId) {
+    console.error('Error: Debes proporcionar --user-id.');
+    console.log('Ejecuta "node send_remote_wipe.mjs --help" para más información.');
     process.exit(1);
 }
-const targetUserId = args[userIdIndex + 1];
+
+if (!targetUserId) {
+    targetUserId = userId;
+}
 
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     console.warn('\nADVERTENCIA: No has configurado GOOGLE_APPLICATION_CREDENTIALS.\nSe intentarán usar Application Default Credentials.\nSi falla, ejecuta: export GOOGLE_APPLICATION_CREDENTIALS=/ruta/tu/service-account.json\n');
@@ -26,19 +69,19 @@ try {
 const db = admin.firestore();
 
 async function run() {
-    console.log(`\nBuscando dispositivos para el usuario: ${targetUserId}...`);
+    console.log(`\nBuscando dispositivos activos en Firestore para el usuario: ${userId}...`);
 
     try {
         const devicesSnapshot = await db
             .collection('users')
-            .doc(targetUserId)
+            .doc(userId)
             .collection('devices')
             .where('enabled', '==', true)
             .get();
 
         if (devicesSnapshot.empty) {
-            console.log(`No se encontraron dispositivos activos para el usuario '${targetUserId}'.`);
-            return;
+            console.log(`No se encontraron dispositivos activos para el usuario '${userId}'.`);
+            process.exit(2);
         }
 
         const validTokens = [];
@@ -51,14 +94,16 @@ async function run() {
 
         if (validTokens.length === 0) {
             console.log('Ningún dispositivo tenía un fcmToken válido.');
-            return;
+            process.exit(2);
         }
 
-        console.log(`Encontrados ${validTokens.length} dispositivo(s). Preparando envío FCM...`);
+        console.log(`Ruta consultada: users/${userId}/devices`);
+        console.log(`Cantidad de dispositivos encontrados: ${validTokens.length}`);
+        console.log(`Payload targetUserId: ${targetUserId}`);
+        console.log(`Payload commandId: ${commandId}`);
 
-        const commandId = crypto.randomUUID();
         const now = new Date();
-        const expiresAt = new Date(now.getTime() + 5 * 60000); // 5 minutos
+        const expiresAt = new Date(now.getTime() + expiresInSeconds * 1000);
 
         const payload = {
             data: {
@@ -68,10 +113,6 @@ async function run() {
                 issuedAt: now.toISOString(),
                 expiresAt: expiresAt.toISOString()
             }
-        };
-
-        const options = {
-            priority: 'high'
         };
 
         const tokens = validTokens.map(t => t.token);
@@ -107,7 +148,7 @@ async function run() {
                 console.log(`\nDeshabilitando ${failedTokens.length} token(s) inválido(s) en Firestore...`);
                 const batch = db.batch();
                 failedTokens.forEach(deviceId => {
-                    const docRef = db.collection('users').doc(targetUserId).collection('devices').doc(deviceId);
+                    const docRef = db.collection('users').doc(userId).collection('devices').doc(deviceId);
                     batch.update(docRef, { enabled: false });
                 });
                 await batch.commit();
@@ -115,10 +156,17 @@ async function run() {
             }
         }
 
-        console.log('\nOperación completada con éxito.');
+        if (response.successCount > 0) {
+            console.log('\nOperación completada con éxito. Al menos un mensaje fue enviado.');
+            process.exit(0);
+        } else {
+            console.log('\nOperación finalizada. Ningún mensaje pudo ser enviado.');
+            process.exit(1);
+        }
 
     } catch (e) {
         console.error('Error durante el borrado remoto:', e);
+        process.exit(1);
     }
 }
 
