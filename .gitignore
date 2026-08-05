@@ -46,3 +46,7 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Credenciales privadas de Firebase Admin
+*firebase-adminsdk*.json
+*service-account*.json
