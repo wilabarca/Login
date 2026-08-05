@@ -23,7 +23,9 @@ class RemoteWipeService {
   );
 
   @visibleForTesting
-  static RemoteWipeService createWithStorage(SecureStorageService storageService) {
+  static RemoteWipeService createWithStorage(
+    SecureStorageService storageService,
+  ) {
     return RemoteWipeService._internal(storageService);
   }
 
@@ -33,7 +35,7 @@ class RemoteWipeService {
 
   Future<RemoteWipeResult> handleRemoteMessage(RemoteMessage message) async {
     debugPrint('[REMOTE_WIPE] Evaluando orden FCM recibida...');
-    
+
     final command = RemoteWipeMessageParser.parse(message.data);
 
     if (command == null) {
@@ -42,7 +44,9 @@ class RemoteWipeService {
     }
 
     if (command.action != remoteWipeAction) {
-      debugPrint('[REMOTE_WIPE] Orden rechazada: invalidAction (${command.action})');
+      debugPrint(
+        '[REMOTE_WIPE] Orden rechazada: invalidAction (${command.action})',
+      );
       return RemoteWipeResult.invalidAction;
     }
 
@@ -59,29 +63,40 @@ class RemoteWipeService {
     }
 
     if (command.targetUserId != localUserId) {
-      debugPrint('[REMOTE_WIPE] Orden rechazada: wrongUser (${command.targetUserId} != $localUserId)');
+      debugPrint(
+        '[REMOTE_WIPE] Orden rechazada: wrongUser (${command.targetUserId} != $localUserId)',
+      );
       return RemoteWipeResult.wrongUser;
     }
 
     final lastCommandId = await _storageService.getLastProcessedCommandId();
 
     if (lastCommandId == command.commandId) {
-      debugPrint('[REMOTE_WIPE] Orden rechazada: duplicate (${command.commandId})');
+      debugPrint(
+        '[REMOTE_WIPE] Orden rechazada: duplicate (${command.commandId})',
+      );
       return RemoteWipeResult.duplicate;
     }
 
     debugPrint('[REMOTE_WIPE] Usuario validado: $localUserId');
 
     // Ejecutamos el borrado
-    await _storageService.deleteSensitiveData();
-    await _storageService.saveProcessedCommandId(command.commandId);
+    try {
+      await _storageService.deleteSensitiveData();
+      await _storageService.saveProcessedCommandId(command.commandId);
+    } catch (e) {
+      debugPrint('[REMOTE_WIPE] Excepción durante el borrado: $e');
+      return RemoteWipeResult.storageError;
+    }
 
     // Verificación
     final status = await _storageService.getSensitiveDataStatus();
     final hasAny = status.values.any((isSaved) => isSaved == true);
 
     if (hasAny) {
-      debugPrint('[REMOTE_WIPE] Error: storageError (No se pudieron eliminar todos los campos)');
+      debugPrint(
+        '[REMOTE_WIPE] Error: storageError (No se pudieron eliminar todos los campos)',
+      );
       return RemoteWipeResult.storageError;
     }
 
